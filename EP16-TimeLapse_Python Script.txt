@@ -1,0 +1,50 @@
+import os
+import base64
+import pandas as pd
+from PIL import Image
+
+# Function to convert an image file to base64
+def image_to_base64(image_path):
+    with open(image_path, "rb") as image_file:
+        base64_data = base64.b64encode(image_file.read()).decode()
+    return base64_data
+
+def resize_image(image_path, percentage):
+    img = Image.open(image_path)
+    width, height = img.size
+    new_width = int(width * percentage / 100)
+    new_height = int(height * percentage / 100)
+    resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+    return resized_img
+
+# List of image paths
+image_paths = dataset["Images Path"]
+
+# Initialize an empty DataFrame
+df = pd.DataFrame(columns=["Filename"] + [f"Column{i+1}" for i in range(0, 32000, 32000)])
+
+# Iterate through the image paths
+for image_path in image_paths:
+    if image_path.endswith(".jpeg") or image_path.endswith(".png"):  # Adjust file extensions as needed
+        filename = os.path.basename(image_path)
+
+
+            # Resize the image by 20%
+        resized_image = resize_image(image_path, 20)
+
+        # Save the resized image temporarily
+        resized_image.save("resized_temp.jpg")  # You can change the format as needed
+
+        base64_data = image_to_base64("resized_temp.jpg")
+        
+        # Split the base64 data into chunks of 32,000 characters
+        base64_chunks = [base64_data[i:i + 32000] for i in range(0, len(base64_data), 32000)]
+        
+        # Create a dictionary to represent the row
+        row_dict = {"Filename": filename}
+        for i, chunk in enumerate(base64_chunks):
+            row_dict[f"Column{i+1}"] = chunk
+        
+        os.remove("resized_temp.jpg")
+        # Append the data to the DataFrame
+        df = df._append(row_dict, ignore_index=True)
